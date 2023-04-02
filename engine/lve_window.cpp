@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 namespace lve {
+    // Learning: things that go after colon are argument intializations
     LveWindow::LveWindow(int w, int h, std::string name) : width{w}, height{h}, windowName{name} {
         initWindow();
     }

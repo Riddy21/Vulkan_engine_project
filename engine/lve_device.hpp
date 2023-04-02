@@ -22,6 +22,7 @@ struct QueueFamilyIndices {
   bool isComplete() { return graphicsFamilyHasValue && presentFamilyHasValue; }
 };
 
+// Creates a Vulkan instance
 class LveDevice {
  public:
 #ifdef NDEBUG
