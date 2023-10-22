@@ -1,5 +1,7 @@
 #version 450
 
+// Runs on a per fragment basis
+
 // Fragment shaders do not have a built in output variable
 // Need to declare ourselfves
 layout (location = 0) out vec4 outColor;

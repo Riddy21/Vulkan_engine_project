@@ -19,7 +19,7 @@ namespace lve {
             FirstApp();
             ~FirstApp();
 
-            // Delete copy functions
+            // Delete copy functions because using vulkan calls to make sure we don't have dangling pointers
             FirstApp(const FirstApp &) = delete;
             FirstApp &operator=(const FirstApp &) = delete;
             void run();

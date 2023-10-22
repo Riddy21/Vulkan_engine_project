@@ -18,8 +18,10 @@ namespace lve {
     }
 
     LvePipeline::~LvePipeline() {
+        // Clean up vertex and shader module
         vkDestroyShaderModule(lveDevice.device(), vertShaderModule, nullptr);
         vkDestroyShaderModule(lveDevice.device(), fragShaderModule, nullptr);
+        // Destroy the pipeline
         vkDestroyPipeline(lveDevice.device(), graphicsPipeline, nullptr);
     }
 
@@ -69,13 +71,14 @@ namespace lve {
         // Creating pipeline shader stages
         VkPipelineShaderStageCreateInfo shaderStages[2];
         shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT; // This stage is for the vertex stage
         shaderStages[0].module = vertShaderModule;
-        shaderStages[0].pName = "main";
+        shaderStages[0].pName = "main"; // name of the function in the shader file
         shaderStages[0].flags = 0;
         shaderStages[0].pNext = nullptr;
-        shaderStages[0].pSpecializationInfo = nullptr;
+        shaderStages[0].pSpecializationInfo = nullptr; // customize shader information
 
+        // This stage is for the fragment stage
         shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         shaderStages[1].module = fragShaderModule;
@@ -100,21 +103,22 @@ namespace lve {
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = 2;
+        pipelineInfo.stageCount = 2; // There are 2 stages
         pipelineInfo.pStages = shaderStages; // From the pipeline stages defined above
-        pipelineInfo.pVertexInputState = &vertexInputInfo; // Fromt he vertex input info above
-        pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
+        pipelineInfo.pVertexInputState = &vertexInputInfo; // From the vertex input info above
         pipelineInfo.pViewportState = &viewportInfo;
+        pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo; // Forom the config info instance we created
         pipelineInfo.pRasterizationState = &configInfo.rasterizationInfo;
         pipelineInfo.pColorBlendState = &configInfo.colorBlendInfo;
         pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
         pipelineInfo.pMultisampleState = &configInfo.multisampleInfo;
-        pipelineInfo.pDynamicState = nullptr;
+        pipelineInfo.pDynamicState = nullptr; // optional: pipline functionality for dynamic state
 
         pipelineInfo.layout = configInfo.pipelineLayout;
         pipelineInfo.renderPass = configInfo.renderPass;
         pipelineInfo.subpass = configInfo.subpass;
 
+        // Can be used for optimizing performance
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -122,8 +126,8 @@ namespace lve {
         if (vkCreateGraphicsPipelines(
                 lveDevice.device(),
                 VK_NULL_HANDLE,
-                1,
-                &pipelineInfo,
+                1, // pipeline count
+                &pipelineInfo, // pipeline configuration
                 nullptr,
                 &graphicsPipeline) != VK_SUCCESS) {
             throw std::runtime_error("failed to create graphics pipeline");
@@ -138,6 +142,7 @@ namespace lve {
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.codeSize = code.size();
         // Need to use a reinterpret cast to convert char array to uint32
+        // Since we are using a vector, the cast takes into account the worst case alignment
         createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
         if (vkCreateShaderModule(lveDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS){
@@ -158,6 +163,7 @@ namespace lve {
         configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
         // When using Triangle Strip, you can break apart strip using a special character
+        // This is disabled for now
         configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
 
         // Tells out pipeline how we want to transform gl viewport to rendering coordinates
@@ -183,6 +189,7 @@ namespace lve {
         configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;
         configInfo.rasterizationInfo.lineWidth = 1.0f;
         // use this to define the front and back face triangles
+        // Depends on the rotation of the vertices
         configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE;
         configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
         configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;

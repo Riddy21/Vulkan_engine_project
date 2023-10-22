@@ -12,6 +12,7 @@ namespace lve {
 
     FirstApp::~FirstApp() {
         vkDestroyPipelineLayout(lveDevice.device(), pipelineLayout, nullptr);
+        // command buffer is automatically destroyed
     }
 
     void FirstApp::run() {
@@ -45,12 +46,14 @@ namespace lve {
     }
 
     void FirstApp::createPipeline() {
+        // This is from our own code
         auto pipelineConfig = LvePipeline::defaultPipelineConfigInfo(lveSwapChain.width(), lveSwapChain.height());
         // Render pass describes the structure and format of frame buffer attachments and structure
         // Blueprint to tell the graphic pipeline what to expect when it is time to render
+        // Multiple subpasses can be used for post processing effects
         pipelineConfig.renderPass = lveSwapChain.getRenderPass();
         pipelineConfig.pipelineLayout = pipelineLayout;
-        lvePipeline = std::make_unique<LvePipeline>(
+        lvePipeline = std::make_unique<LvePipeline>( // using smart pointers
             lveDevice,
             "shaders/simple_shader.vert.spv",
             "shaders/simple_shader.frag.spv",
@@ -59,12 +62,27 @@ namespace lve {
         
     }
 
+    /*
+    More about command buffers
+    Not able to execute commands directly on the GPU
+    Submit buffer to device queue to be submitted to a framebuffer
+    Command buffers allow a sequence of commands to be recorded once
+        Record once at initiiation, then execute multiple times
+
+
+    Lifecycle
+        Executes, and the in a pending state
+        CPU will wait for frame buffer to stop executing before reusing
+    */
+
     void FirstApp::createCommandBuffers() {
         // Depends on whether computer supports double or triple buffering
+        // Will match the number of framebuffer
         commandBuffers.resize(lveSwapChain.imageCount());
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        // Types of command buffers
         // Primary:
         //      - allows you to submit to the graphics queue
         //      - cannot be called by other buffers
@@ -78,12 +96,14 @@ namespace lve {
         allocInfo.commandPool = lveDevice.getCommandPool();
         allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
+        // Allocates space for command buffers
         if (vkAllocateCommandBuffers(lveDevice.device(),
                                      &allocInfo,
                                      commandBuffers.data()) != VK_SUCCESS){
             throw std::runtime_error("failed to allocate command buffers!");
         }
 
+        // Record draw frame to command buffer
         // Initialize each command buffer
         for (int i=0; i<commandBuffers.size(); i++){
             VkCommandBufferBeginInfo beginInfo{};
@@ -93,17 +113,20 @@ namespace lve {
                 throw std::runtime_error("failed to begin recording command buffer!");
             }
 
+            // First command to begin a render pass
             VkRenderPassBeginInfo renderPassInfo{};
             renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             renderPassInfo.renderPass = lveSwapChain.getRenderPass();
-            renderPassInfo.framebuffer = lveSwapChain.getFrameBuffer(i);
+            renderPassInfo.framebuffer = lveSwapChain.getFrameBuffer(i); // writing to a specific frame buffer
 
+            // Setup the render area, area where shaders loads and stores take place
             renderPassInfo.renderArea.offset = {0, 0};
-            renderPassInfo.renderArea.extent = lveSwapChain.getSwapChainExtent(); // Use swapchain extent, not window, because could be larger
+            renderPassInfo.renderArea.extent = lveSwapChain.getSwapChainExtent(); // Use swapchain extent, not window, because could be larger than window
 
+            // Initial values you want to clear the frame buffer to
             std::array<VkClearValue, 2> clearValues{};
             clearValues[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
-            clearValues[1].depthStencil = {1.0f, 0};
+            clearValues[1].depthStencil = {1.0f, 0}; // farthest is 1, 0 is closest
 
             renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
             renderPassInfo.pClearValues = clearValues.data();
@@ -114,11 +137,17 @@ namespace lve {
             // If you want to use secondary command buffers
                 // SECONDARY_COMMAND_BUFFERS
                 // You can add command buffers to teh command buffer
+            // VK_SUBPASS_CONTENTS_INLINE: 
+                // Render pass commands will be embedded in the primary command buffer itself
+                // You can also use secondary command buffers
+                    // So you can only use one type at once
             vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            lvePipeline->bind(commandBuffers[i]);
+            lvePipeline->bind(commandBuffers[i]); // binds the command bufer to the pipeline
             vkCmdDraw(commandBuffers[i], 3, 1, 0, 0); // 3 verticies and only 1 instance, aren't using any offsets
+            // Instances can be used to draw multiple copies of the same object
 
+            // End the render pass
             vkCmdEndRenderPass(commandBuffers[i]);
             if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
                 throw std::runtime_error("failed to record command buffer!");
@@ -132,6 +161,7 @@ namespace lve {
         auto result = lveSwapChain.acquireNextImage(&imageIndex);
 
         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            // Need to handle suboptimal case in the future due to window resizing
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
