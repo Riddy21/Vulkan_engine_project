@@ -403,12 +403,15 @@ uint32_t LveDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags pr
   throw std::runtime_error("failed to find suitable memory type!");
 }
 
+// Takes buffer size and usage, and properties, and initializes buffer memory and location
 void LveDevice::createBuffer(
     VkDeviceSize size,
     VkBufferUsageFlags usage,
     VkMemoryPropertyFlags properties,
     VkBuffer &buffer,
     VkDeviceMemory &bufferMemory) {
+
+  // Create the info and then create the buffer
   VkBufferCreateInfo bufferInfo{};
   bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   bufferInfo.size = size;
@@ -419,9 +422,11 @@ void LveDevice::createBuffer(
     throw std::runtime_error("failed to create vertex buffer!");
   }
 
+  // Give the required mem requirements
   VkMemoryRequirements memRequirements;
   vkGetBufferMemoryRequirements(device_, buffer, &memRequirements);
 
+  // Allocates the memory
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
@@ -431,6 +436,7 @@ void LveDevice::createBuffer(
     throw std::runtime_error("failed to allocate vertex buffer memory!");
   }
 
+  // binds the moemory
   vkBindBufferMemory(device_, buffer, bufferMemory, 0);
 }
 

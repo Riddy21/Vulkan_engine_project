@@ -1,5 +1,7 @@
 #include "lve_pipeline.hpp"
 
+#include "lve_model.hpp"
+
 //std
 #include <fstream>
 #include <iostream>
@@ -87,12 +89,14 @@ namespace lve {
         shaderStages[1].pNext = nullptr;
         shaderStages[1].pSpecializationInfo = nullptr;
 
+        auto bindingDescriptions = LveModel::Vertex::getBindingDescriptions();
+        auto attributeDescriptions = LveModel::Vertex::getAttributeDescriptions();
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexAttributeDescriptionCount = 0;
-        vertexInputInfo.vertexBindingDescriptionCount = 0;
-        vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-        vertexInputInfo.pVertexBindingDescriptions = nullptr;
+        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()); // Set the size to allocate
+        vertexInputInfo.vertexBindingDescriptionCount = static_cast<u_int32_t>(bindingDescriptions.size());
+        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data(); // Data returns a direct pointer to the memory array used internally by the vector to store its owned elements.
+        vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
         VkPipelineViewportStateCreateInfo viewportInfo{};
         viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;

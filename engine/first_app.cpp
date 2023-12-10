@@ -5,6 +5,7 @@
 namespace lve {
 
     FirstApp::FirstApp() {
+        loadModels();
         createPipelineLayout();
         createPipeline();
         createCommandBuffers();
@@ -23,7 +24,19 @@ namespace lve {
             drawFrame();
         }
         // CPU will block until GPU operations are completed
+        // When device is deleted, the command pool and buffer is destroyed as well
         vkDeviceWaitIdle(lveDevice.device());
+    }
+
+    void FirstApp::loadModels(){
+        vertices = { // First bracket is the vector
+            {{0.5f, -0.5f}}, // Each vertex, GLM vect2 position member
+            {{0.5f, 0.5f}},
+            {{-0.5f, 0.5f}}
+        };
+
+        // Intialize the model
+        lveModel = std::make_unique<LveModel>(lveDevice, vertices);
     }
 
     // Creates a pipeline layout with defaults set and assigns it to the pipelineLayout pointer
@@ -47,6 +60,7 @@ namespace lve {
 
     void FirstApp::createPipeline() {
         // This is from our own code
+        // Make sure to use the resolution of the lveSwapChain
         auto pipelineConfig = LvePipeline::defaultPipelineConfigInfo(lveSwapChain.width(), lveSwapChain.height());
         // Render pass describes the structure and format of frame buffer attachments and structure
         // Blueprint to tell the graphic pipeline what to expect when it is time to render
@@ -109,6 +123,7 @@ namespace lve {
             VkCommandBufferBeginInfo beginInfo{};
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
+            // Begin recording a command buffer
             if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS){
                 throw std::runtime_error("failed to begin recording command buffer!");
             }
@@ -144,8 +159,8 @@ namespace lve {
             vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
             lvePipeline->bind(commandBuffers[i]); // binds the command bufer to the pipeline
-            vkCmdDraw(commandBuffers[i], 3, 1, 0, 0); // 3 verticies and only 1 instance, aren't using any offsets
-            // Instances can be used to draw multiple copies of the same object
+            lveModel->bind(commandBuffers[i]);
+            lveModel->draw(commandBuffers[i]);
 
             // End the render pass
             vkCmdEndRenderPass(commandBuffers[i]);

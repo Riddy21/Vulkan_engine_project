@@ -1,14 +1,11 @@
 //VERTEX SHADER
 #version 450
 
-// hardcode vertices for triangle
-// vec2 is a built-in type in the glsl lang that contains two floating point values
-// 3 points for the corners of the triangle
-vec2 positions[3] = vec2[] (
-    vec2(0.0, -0.5),
-    vec2(0.5, 0.5),
-    vec2(-0.5, 0.5)
-);
+// Specifies a vertex attribute
+//     - Datatype is vec2
+//     - The in key word specifies that this takes the value from the vertex buffer
+//     - location specifies the storage location of where the variable value will come from
+layout(location = 0) in vec2 position;
 
 // Will be executed once for each vertex we have
 // Input will get input vertex from input assembler stage
@@ -20,5 +17,5 @@ void main() {
     //      x, y: gl_Vertexindex contains the index of the current vertex for each time out main function is run
     //      z: 0 is front most layer stacks of layers 1 is the back
     //      normalization coef: normalizes vector, all the vectors are divided by this component to normalize
-    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
+    gl_Position = vec4(position, 0.0, 1.0); // don't need to specify the index because specified in vertex buffer 
 }
