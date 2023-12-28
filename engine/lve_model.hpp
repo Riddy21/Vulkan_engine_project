@@ -17,6 +17,7 @@ namespace lve {
             // Define a struct that wraps the glm vertext buffer
             struct Vertex {
                 glm::vec2 position;
+                glm::vec3 color; // interleaved with position in binding
 
                 // Static funcitons
                 static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();

@@ -36,8 +36,8 @@ namespace lve {
             std::vector<LveModel::Vertex> buffer;
             for (int i=0; i<input.size(); i++){
                 buffer.push_back(input[i]);
-                buffer.push_back({(input[i].position + input[(i+1)%input.size()].position) * 0.5f});
-                buffer.push_back({(input[i].position + input[(i+2)%input.size()].position) * 0.5f});
+                buffer.push_back({(input[i].position + input[(i+1)%input.size()].position) * 0.5f, input[(i+1)%input.size()].color});
+                buffer.push_back({(input[i].position + input[(i+2)%input.size()].position) * 0.5f, input[(i+2)%input.size()].color});
                 buffer = draw_triangles(buffer, depth - 1);
                 output.insert(output.end(), buffer.begin(), buffer.end());
                 buffer.clear();
@@ -48,11 +48,11 @@ namespace lve {
 
     void FirstApp::loadModels(){
         vertices = { // First bracket is the vector
-            {{0.0f, -1.0f}}, // Each vertex, GLM vect2 position member
-            {{1.0f, 1.0f}},
-            {{-1.0f, 1.0f}}
+            {{0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}}, // Each vertex, GLM vect2 position member
+            {{1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
+            {{-1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}
         };
-        auto new_vertices = draw_triangles(vertices, 10);
+        auto new_vertices = draw_triangles(vertices, 5);
 
         // Intialize the model
         lveModel = std::make_unique<LveModel>(lveDevice, new_vertices);

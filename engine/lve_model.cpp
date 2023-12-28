@@ -37,7 +37,7 @@ namespace lve {
         // Create a region of host memory mapped to device memory
         // and sets data to point to the beginning of the mapped meory range
         vkMapMemory(lveDevice.device(), vertexBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+        memcpy(data, vertices.data(), static_cast<size_t>(bufferSize)); // All vertex data will be accounted for
         vkUnmapMemory(lveDevice.device(), vertexBufferMemory);
 
         // Memcpy
@@ -61,17 +61,23 @@ namespace lve {
         // Corresponds to our vertex buffer, bound to location 0, strde advances by size of Vertex
         std::vector<VkVertexInputBindingDescription> bindingDescriptions(1); // Sets the size
         bindingDescriptions[0].binding = 0;
-        bindingDescriptions[0].stride = sizeof(Vertex); // Sets the number of buffer steps to skip
+        bindingDescriptions[0].stride = sizeof(Vertex); // Sets the number of buffer steps to skip, will auto map to our struct
         bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         return bindingDescriptions;
     }
 
     std::vector<VkVertexInputAttributeDescription> LveModel::Vertex::getAttributeDescriptions() {
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions(1);
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2); // Needs to match the number of output vertex attribues
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT; // The format of our data
-        attributeDescriptions[0].offset = 0;
+        attributeDescriptions[0].offset = offsetof(Vertex, position);
+
+        attributeDescriptions[1].binding = 0; // inteleaving position and color in 1 binding
+        attributeDescriptions[1].location = 1; // Must match with location in vertex shader
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // The format of our data
+        attributeDescriptions[1].offset = offsetof(Vertex, color); // Will automatically calculate the byte offset of the color member in the vertex struct
+                                                                   // Makes sure the order which the Vertex struct is declared doesn't matter
         return attributeDescriptions;
     }
 }
