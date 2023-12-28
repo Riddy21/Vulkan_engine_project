@@ -28,15 +28,34 @@ namespace lve {
         vkDeviceWaitIdle(lveDevice.device());
     }
 
+    std::vector<LveModel::Vertex> FirstApp::draw_triangles(std::vector<LveModel::Vertex> input, unsigned int depth){
+        if (depth == 0){
+            return input;
+        } else {
+            std::vector<LveModel::Vertex> output;
+            std::vector<LveModel::Vertex> buffer;
+            for (int i=0; i<input.size(); i++){
+                buffer.push_back(input[i]);
+                buffer.push_back({(input[i].position + input[(i+1)%input.size()].position) * 0.5f});
+                buffer.push_back({(input[i].position + input[(i+2)%input.size()].position) * 0.5f});
+                buffer = draw_triangles(buffer, depth - 1);
+                output.insert(output.end(), buffer.begin(), buffer.end());
+                buffer.clear();
+            }
+            return output;
+        }
+    }
+
     void FirstApp::loadModels(){
         vertices = { // First bracket is the vector
-            {{0.5f, -0.5f}}, // Each vertex, GLM vect2 position member
-            {{0.5f, 0.5f}},
-            {{-0.5f, 0.5f}}
+            {{0.0f, -1.0f}}, // Each vertex, GLM vect2 position member
+            {{1.0f, 1.0f}},
+            {{-1.0f, 1.0f}}
         };
+        auto new_vertices = draw_triangles(vertices, 10);
 
         // Intialize the model
-        lveModel = std::make_unique<LveModel>(lveDevice, vertices);
+        lveModel = std::make_unique<LveModel>(lveDevice, new_vertices);
     }
 
     // Creates a pipeline layout with defaults set and assigns it to the pipelineLayout pointer

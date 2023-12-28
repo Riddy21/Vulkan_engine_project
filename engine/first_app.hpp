@@ -26,6 +26,7 @@ namespace lve {
             void run();
         private:
             void loadModels();
+            std::vector<LveModel::Vertex> draw_triangles(std::vector<LveModel::Vertex> input, unsigned int depth);
             void createPipelineLayout();
             void createPipeline();
             void createCommandBuffers();
