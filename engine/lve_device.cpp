@@ -1,5 +1,7 @@
 #include "lve_device.hpp"
 
+#include <vulkan/vulkan_beta.h>
+
 // std headers
 #include <cstring>
 #include <iostream>

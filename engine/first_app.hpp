@@ -30,11 +30,16 @@ namespace lve {
             void createPipelineLayout();
             void createPipeline();
             void createCommandBuffers();
+            void freeCommandBuffers();
             void drawFrame();
+            void recreateSwapChain();
+            void recordCommandBuffer(int imageIndex);
+
             // Learning constructed here, that means that object will construct and deconstruct with the app
             LveWindow lveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
             LveDevice lveDevice{lveWindow};
-            LveSwapChain lveSwapChain{lveDevice, lveWindow.getExtent()};
+            // By using unique ptr, can easily create a new swapchain and swapping it out
+            std::unique_ptr<LveSwapChain> lveSwapChain;
             // Smart pointer:
             //  A pointer with the additional functionality of automatic memory management
             //  No longer responsible for new and delete

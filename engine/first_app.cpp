@@ -7,7 +7,7 @@ namespace lve {
     FirstApp::FirstApp() {
         loadModels();
         createPipelineLayout();
-        createPipeline();
+        recreateSwapChain();
         createCommandBuffers();
     }
 
@@ -78,13 +78,14 @@ namespace lve {
     }
 
     void FirstApp::createPipeline() {
-        // This is from our own code
-        // Make sure to use the resolution of the lveSwapChain
-        auto pipelineConfig = LvePipeline::defaultPipelineConfigInfo(lveSwapChain.width(), lveSwapChain.height());
+        assert(lveSwapChain != nullptr && "Cannot create pipeline before swap chain");
+        assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
+        PipelineConfigInfo pipelineConfig{};
+        LvePipeline::defaultPipelineConfigInfo(pipelineConfig);
         // Render pass describes the structure and format of frame buffer attachments and structure
         // Blueprint to tell the graphic pipeline what to expect when it is time to render
         // Multiple subpasses can be used for post processing effects
-        pipelineConfig.renderPass = lveSwapChain.getRenderPass();
+        pipelineConfig.renderPass = lveSwapChain->getRenderPass();
         pipelineConfig.pipelineLayout = pipelineLayout;
         lvePipeline = std::make_unique<LvePipeline>( // using smart pointers
             lveDevice,
@@ -93,6 +94,29 @@ namespace lve {
             pipelineConfig
         );
         
+    }
+
+    void FirstApp::recreateSwapChain() {
+        auto extent = lveWindow.getExtent();
+        // Causes program to freeze when minimized
+        // This is when one dimension is 0
+        while (extent.width == 0 || extent.height == 0) {
+            extent = lveWindow.getExtent();
+            glfwWaitEvents();
+        }
+
+        vkDeviceWaitIdle(lveDevice.device());
+
+        if (lveSwapChain == nullptr)
+            lveSwapChain = std::make_unique<LveSwapChain>(lveDevice, extent);
+        else
+            lveSwapChain = std::make_unique<LveSwapChain>(lveDevice, extent, std::move(lveSwapChain)); // Allow us to create a new copy of lveSwapChain, but set LveSwapChain as null pointer
+            if (lveSwapChain->imageCount() != commandBuffers.size() && commandBuffers.size() > 0) {
+                freeCommandBuffers();
+                createCommandBuffers();
+            }
+
+        createPipeline();
     }
 
     /*
@@ -111,7 +135,7 @@ namespace lve {
     void FirstApp::createCommandBuffers() {
         // Depends on whether computer supports double or triple buffering
         // Will match the number of framebuffer
-        commandBuffers.resize(lveSwapChain.imageCount());
+        commandBuffers.resize(lveSwapChain->imageCount());
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -135,74 +159,115 @@ namespace lve {
                                      commandBuffers.data()) != VK_SUCCESS){
             throw std::runtime_error("failed to allocate command buffers!");
         }
+    }
 
-        // Record draw frame to command buffer
-        // Initialize each command buffer
-        for (int i=0; i<commandBuffers.size(); i++){
-            VkCommandBufferBeginInfo beginInfo{};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    void FirstApp::freeCommandBuffers() {
+        vkFreeCommandBuffers(
+            lveDevice.device(),
+            lveDevice.getCommandPool(),
+            static_cast<uint32_t>(commandBuffers.size()),
+            commandBuffers.data());
+        commandBuffers.clear();
+    }
 
-            // Begin recording a command buffer
-            if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS){
-                throw std::runtime_error("failed to begin recording command buffer!");
-            }
+    void FirstApp::recordCommandBuffer(int imageIndex){
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-            // First command to begin a render pass
-            VkRenderPassBeginInfo renderPassInfo{};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = lveSwapChain.getRenderPass();
-            renderPassInfo.framebuffer = lveSwapChain.getFrameBuffer(i); // writing to a specific frame buffer
+        // Begin recording a command buffer
+        if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS){
+            throw std::runtime_error("failed to begin recording command buffer!");
+        }
 
-            // Setup the render area, area where shaders loads and stores take place
-            renderPassInfo.renderArea.offset = {0, 0};
-            renderPassInfo.renderArea.extent = lveSwapChain.getSwapChainExtent(); // Use swapchain extent, not window, because could be larger than window
+        // First command to begin a render pass
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = lveSwapChain->getRenderPass();
+        renderPassInfo.framebuffer = lveSwapChain->getFrameBuffer(imageIndex); // writing to a specific frame buffer
 
-            // Initial values you want to clear the frame buffer to
-            std::array<VkClearValue, 2> clearValues{};
-            clearValues[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
-            clearValues[1].depthStencil = {1.0f, 0}; // farthest is 1, 0 is closest
+        // Setup the render area, area where shaders loads and stores take place
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = lveSwapChain->getSwapChainExtent(); // Use swapchain extent, not window, because could be larger than window
 
-            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-            renderPassInfo.pClearValues = clearValues.data();
+        // Initial values you want to clear the frame buffer to
+        std::array<VkClearValue, 2> clearValues{};
+        clearValues[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
+        clearValues[1].depthStencil = {1.0f, 0}; // farthest is 1, 0 is closest
 
-            // No secondary command buffers will be use
-            // Commands wil be embedded in the primary command buffer itself
-                // No mixing allowed
-            // If you want to use secondary command buffers
-                // SECONDARY_COMMAND_BUFFERS
-                // You can add command buffers to teh command buffer
-            // VK_SUBPASS_CONTENTS_INLINE: 
-                // Render pass commands will be embedded in the primary command buffer itself
-                // You can also use secondary command buffers
-                    // So you can only use one type at once
-            vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
 
-            lvePipeline->bind(commandBuffers[i]); // binds the command bufer to the pipeline
-            lveModel->bind(commandBuffers[i]);
-            lveModel->draw(commandBuffers[i]);
+        vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            // End the render pass
-            vkCmdEndRenderPass(commandBuffers[i]);
-            if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to record command buffer!");
-            }
+        // Every frame, dynamicaly set the viewport and scissor just before submitting the buffer to be executed
+        // Always set the right window size even if the swap chain changes
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(lveSwapChain->getSwapChainExtent().width);
+        viewport.height = static_cast<float>(lveSwapChain->getSwapChainExtent().height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        VkRect2D scissor{{0, 0}, lveSwapChain->getSwapChainExtent()};
+        vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
+
+        // No secondary command buffers will be use
+        // Commands wil be embedded in the primary command buffer itself
+            // No mixing allowed
+        // If you want to use secondary command buffers
+            // SECONDARY_COMMAND_BUFFERS
+            // You can add command buffers to teh command buffer
+        // VK_SUBPASS_CONTENTS_INLINE: 
+            // Render pass commands will be embedded in the primary command buffer itself
+            // You can also use secondary command buffers
+                // So you can only use one type at once
+        lvePipeline->bind(commandBuffers[imageIndex]); // binds the command bufer to the pipeline
+        lveModel->bind(commandBuffers[imageIndex]);
+        lveModel->draw(commandBuffers[imageIndex]);
+
+        // End the render pass
+        vkCmdEndRenderPass(commandBuffers[imageIndex]);
+        if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to record command buffer!");
         }
     }
+
     void FirstApp::drawFrame() {
         uint32_t imageIndex;
         // fetches index of frame rendered next
         // Handles CPU GPU sync for v-sync
-        auto result = lveSwapChain.acquireNextImage(&imageIndex);
+        auto result = lveSwapChain->acquireNextImage(&imageIndex);
+
+        // Detect if the window has been resized
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {// Detect if surface changed in such way that it is incompatible with swap chain
+            recreateSwapChain();
+            return;
+        }
+
 
         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
             // Need to handle suboptimal case in the future due to window resizing
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
+        // Can we do this only after the swap chain is changed?
+        // record command buffer every frame
+        recordCommandBuffer(imageIndex); // no longer done at startup? Isn't this super inefficient?
+
         // submits the command buffer to the device graphics queue, handle CPU-GPU sync
         // Command buffer will be executed
         // Submit to the display at the appropriate time
-        result = lveSwapChain.submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
+        result = lveSwapChain->submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
+
+        // Detect after command buffer if it has been resized
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
+            lveWindow.wasWindowResized()) {
+            lveWindow.resetWindowResizedFlag();
+            recreateSwapChain();
+            return ;
+        }
+
 
         if (result != VK_SUCCESS) {
             throw std::runtime_error("failed to present swap chain image!");

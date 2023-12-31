@@ -98,25 +98,18 @@ namespace lve {
         vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data(); // Data returns a direct pointer to the memory array used internally by the vector to store its owned elements.
         vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
-        VkPipelineViewportStateCreateInfo viewportInfo{};
-        viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportInfo.viewportCount = 1;
-        viewportInfo.pViewports = &configInfo.viewport;
-        viewportInfo.scissorCount = 1;
-        viewportInfo.pScissors = &configInfo.scissor;
-
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = 2; // There are 2 stages
         pipelineInfo.pStages = shaderStages; // From the pipeline stages defined above
         pipelineInfo.pVertexInputState = &vertexInputInfo; // From the vertex input info above
-        pipelineInfo.pViewportState = &viewportInfo;
+        pipelineInfo.pViewportState = &configInfo.viewportInfo;
         pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo; // Forom the config info instance we created
         pipelineInfo.pRasterizationState = &configInfo.rasterizationInfo;
         pipelineInfo.pColorBlendState = &configInfo.colorBlendInfo;
         pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
         pipelineInfo.pMultisampleState = &configInfo.multisampleInfo;
-        pipelineInfo.pDynamicState = nullptr; // optional: pipline functionality for dynamic state
+        pipelineInfo.pDynamicState = &configInfo.dynamicStateInfo; // Pipline functionality for dynamic state
 
         pipelineInfo.layout = configInfo.pipelineLayout;
         pipelineInfo.renderPass = configInfo.renderPass;
@@ -154,10 +147,7 @@ namespace lve {
         }
     }
 
-    PipelineConfigInfo LvePipeline::defaultPipelineConfigInfo(uint32_t width, uint32_t height) {
-        // These are the configuration information settings for the Vulkan Engine
-        PipelineConfigInfo configInfo{};
-
+    void LvePipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
         // Type of assembly info
         configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 
@@ -169,20 +159,14 @@ namespace lve {
         // When using Triangle Strip, you can break apart strip using a special character
         // This is disabled for now
         configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
+        
+        // Set to view port configurations
+        configInfo.viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        configInfo.viewportInfo.viewportCount = 1;
+        configInfo.viewportInfo.pViewports = nullptr;
+        configInfo.viewportInfo.scissorCount = 1;
+        configInfo.viewportInfo.pScissors = nullptr;
 
-        // Tells out pipeline how we want to transform gl viewport to rendering coordinates
-        // Scales the viewport
-        configInfo.viewport.x = 0.0f;
-        configInfo.viewport.y = 0.0f;
-        configInfo.viewport.width = static_cast<float>(width);
-        configInfo.viewport.height = static_cast<float>(height);
-        configInfo.viewport.minDepth = 0.0f;
-        configInfo.viewport.maxDepth = 1.0f;
-
-        // Tells pipeline how to transform gl viewport to rendering coordinates
-        // Cuts the viewport
-        configInfo.scissor.offset = {0, 0};
-        configInfo.scissor.extent = {width, height};
 
         // Breaks up geometry into fragments
         configInfo.rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -245,6 +229,13 @@ namespace lve {
         configInfo.depthStencilInfo.stencilTestEnable = VK_FALSE;
         configInfo.depthStencilInfo.front = {};  // Optional
         configInfo.depthStencilInfo.back = {};   // Optional
-        return configInfo;
+
+        // Enable dynamic state configuration to expect dynamic scissor and viewport
+        configInfo.dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
+        configInfo.dynamicStateInfo.dynamicStateCount =
+                static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
+        configInfo.dynamicStateInfo.flags = 0;
     }
 }
