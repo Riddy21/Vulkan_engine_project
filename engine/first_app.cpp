@@ -1,8 +1,18 @@
 #include "first_app.hpp"
 
+#define GLM_FORCE_RADIANS // Radians must be radians
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE // Expect depth values to 0 - 1
+#include <glm/glm.hpp>
+
 #include <stdexcept>
 
 namespace lve {
+
+    // In implementation because it's temporary
+    struct SimplePushConstantData {
+        glm::vec2 offset;
+        alignas(16) glm::vec3 color; // Alignment issue with glfw struct, needs to align by 4 bytes
+    };
 
     FirstApp::FirstApp() {
         loadModels();
@@ -48,11 +58,11 @@ namespace lve {
 
     void FirstApp::loadModels(){
         vertices = { // First bracket is the vector
-            {{0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}}, // Each vertex, GLM vect2 position member
-            {{1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
-            {{-1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}}
+            {{0.0f, -0.3f}, {1.0f, 0.0f, 0.0f}}, // Each vertex, GLM vect2 position member
+            {{0.3f, 0.3f}, {0.0f, 1.0f, 0.0f}},
+            {{-0.3f, 0.3f}, {0.0f, 0.0f, 1.0f}}
         };
-        auto new_vertices = draw_triangles(vertices, 5);
+        auto new_vertices = draw_triangles(vertices, 1);
 
         // Intialize the model
         lveModel = std::make_unique<LveModel>(lveDevice, new_vertices);
@@ -60,14 +70,19 @@ namespace lve {
 
     // Creates a pipeline layout with defaults set and assigns it to the pipelineLayout pointer
     void FirstApp::createPipelineLayout(){
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT; // Want fragment and vertex shader to access push constants
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(SimplePushConstantData);
+
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 0;
         // used to pass data other than vertex data to vertex shaders
         pipelineLayoutInfo.pSetLayouts = nullptr;
         // Push constants are way to efficiently send small amount of data to shaders 
-        pipelineLayoutInfo.pushConstantRangeCount = 0;
-        pipelineLayoutInfo.pPushConstantRanges = nullptr;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
         if (vkCreatePipelineLayout(lveDevice.device(),
                                    &pipelineLayoutInfo,
@@ -171,6 +186,9 @@ namespace lve {
     }
 
     void FirstApp::recordCommandBuffer(int imageIndex){
+        static int frame = 0;
+        frame = (frame + 1) % 100;
+
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -224,7 +242,20 @@ namespace lve {
                 // So you can only use one type at once
         lvePipeline->bind(commandBuffers[imageIndex]); // binds the command bufer to the pipeline
         lveModel->bind(commandBuffers[imageIndex]);
-        lveModel->draw(commandBuffers[imageIndex]);
+
+        for (int j = 0; j < 4; j++) {
+            SimplePushConstantData push{};
+            push.offset = {0.0f, -0.4f + j * 0.25f}; // Shifted in y axis
+            push.color = {0.0f, 0.0f + 0.01f * frame, 0.2f - 0.2f * j}; // Darker to lighter blue
+
+            vkCmdPushConstants(commandBuffers[imageIndex],
+                               pipelineLayout,
+                               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                               0, // offset
+                               sizeof(SimplePushConstantData),
+                               &push);
+            lveModel->draw(commandBuffers[imageIndex]);
+        }
 
         // End the render pass
         vkCmdEndRenderPass(commandBuffers[imageIndex]);

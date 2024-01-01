@@ -11,6 +11,13 @@ layout(location = 1) in vec3 color; // loation is the state machine location of 
 // No association in input locations and output locations
 layout(location = 0) out vec3 fragColor;
 
+// Shader expects to receive push constant data
+// NOTE: Only one push constant can be used per shader block
+layout(push_constant) uniform Push {
+    vec2 offset; // must be same order as co
+    vec3 color;
+} push;
+
 // Will be executed once for each vertex we have
 // Input will get input vertex from input assembler stage
 // Output wil be the output a position
@@ -21,8 +28,6 @@ void main() {
     //      x, y: gl_Vertexindex contains the index of the current vertex for each time out main function is run
     //      z: 0 is front most layer stacks of layers 1 is the back
     //      normalization coef: normalizes vector, all the vectors are divided by this component to normalize
-    gl_Position = vec4(position, 0.0, 1.0); // don't need to specify the index because specified in vertex buffer 
-
-    // pass input color to output color
+    gl_Position = vec4(position + push.offset, 0.0, 1.0); // don't need to specify the index because specified in vertex buffer 
     fragColor = color;
 }
