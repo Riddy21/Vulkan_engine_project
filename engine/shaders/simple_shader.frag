@@ -17,6 +17,7 @@ layout(location = 0) out vec4 outColor;
 // Shader expects to receive push constant data
 // NOTE: Only one push constant can be used per shader block
 layout(push_constant) uniform Push {
+    mat2 transform; // mat2 is a built in 2x2 matrix
     vec2 offset; // must be same order as co
     vec3 color;
 } push;

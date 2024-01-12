@@ -14,6 +14,7 @@ layout(location = 0) out vec3 fragColor;
 // Shader expects to receive push constant data
 // NOTE: Only one push constant can be used per shader block
 layout(push_constant) uniform Push {
+    mat2 transform;
     vec2 offset; // must be same order as co
     vec3 color;
 } push;
@@ -28,6 +29,8 @@ void main() {
     //      x, y: gl_Vertexindex contains the index of the current vertex for each time out main function is run
     //      z: 0 is front most layer stacks of layers 1 is the back
     //      normalization coef: normalizes vector, all the vectors are divided by this component to normalize
-    gl_Position = vec4(position + push.offset, 0.0, 1.0); // don't need to specify the index because specified in vertex buffer 
+    // Mat2 is not commutative
+    gl_Position = vec4(push.transform * position + push.offset, 0.0, 1.0); // don't need to specify the index because specified in vertex buffer 
+                                                                           // position is multiplied on the right side (applied first)
     fragColor = color;
 }

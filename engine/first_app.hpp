@@ -5,6 +5,7 @@
 #include "lve_device.hpp"
 #include "lve_swap_chain.hpp"
 #include "lve_model.hpp"
+#include "lve_game_object.hpp"
 
 //std
 #include <memory>
@@ -25,7 +26,7 @@ namespace lve {
             FirstApp &operator=(const FirstApp &) = delete;
             void run();
         private:
-            void loadModels();
+            void loadGameObjects();
             std::vector<LveModel::Vertex> draw_triangles(std::vector<LveModel::Vertex> input, unsigned int depth);
             void createPipelineLayout();
             void createPipeline();
@@ -34,6 +35,7 @@ namespace lve {
             void drawFrame();
             void recreateSwapChain();
             void recordCommandBuffer(int imageIndex);
+            void renderGameObjects(VkCommandBuffer commandBuffer);
 
             // Learning constructed here, that means that object will construct and deconstruct with the app
             LveWindow lveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
@@ -46,8 +48,7 @@ namespace lve {
             std::unique_ptr<LvePipeline> lvePipeline;
             VkPipelineLayout pipelineLayout;
             std::vector<VkCommandBuffer> commandBuffers;
-            std::unique_ptr<LveModel> lveModel;
-
             std::vector<LveModel::Vertex> vertices;
+            std::vector<LveGameObject> gameObjects;
     };
 }
