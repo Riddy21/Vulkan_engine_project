@@ -30,10 +30,10 @@ namespace lve {
                 // render shadow casting objects
                 //end offscreen shadow pass
 
-                lveRenderer.beginSwapChainRenderPass(commandBuffer); // Record the command buffer
+                lveRenderer.beginSwapChainRenderPass(commandBuffer); // Record the command buffer, set up the render system
                 simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects);
                 lveRenderer.endSwapChainRenderPass(commandBuffer); // Stop recording the command buffer
-                lveRenderer.endFrame();
+                lveRenderer.endFrame(); // Submits the command buffer
             }
         }
         // CPU will block until GPU operations are completed

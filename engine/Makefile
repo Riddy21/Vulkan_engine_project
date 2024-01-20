@@ -1,6 +1,6 @@
-include .env
+#include .env
 
-CFLAGS = -std=c++17 -I. -I$(VULKAN_SDK_PATH)/include
+CFLAGS = -std=c++17 -I.
 LDFLAGS = `pkg-config --static --libs glfw3` -lvulkan
 
 GLSLC = glslc
@@ -14,7 +14,7 @@ fragObjFiles = $(patsubst %.frag, %.frag.spv, $(fragSources))
 TARGET = a.out
 $(TARGET): $(vertObjFiles) $(fragObjFiles)
 $(TARGET): *.cpp *.hpp
-	g++ $(CFLAGS) -o $(TARGET) *.cpp $(LDFLAGS)
+	g++  $(CFLAGS) -o $(TARGET) *.cpp $(LDFLAGS)
 
 # make shader targets
 %.spv: %

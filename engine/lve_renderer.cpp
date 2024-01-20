@@ -24,16 +24,16 @@ namespace lve {
 
         vkDeviceWaitIdle(lveDevice.device());
 
-        if (lveSwapChain == nullptr)
+        if (lveSwapChain == nullptr) {
             lveSwapChain = std::make_unique<LveSwapChain>(lveDevice, extent);
-        else
+        } else {
+            std::shared_ptr<LveSwapChain> oldSwapChain = std::move(lveSwapChain);
             lveSwapChain = std::make_unique<LveSwapChain>(lveDevice, extent, std::move(lveSwapChain)); // Allow us to create a new copy of lveSwapChain, but set LveSwapChain as null pointer
-            if (lveSwapChain->imageCount() != commandBuffers.size() && commandBuffers.size() > 0) {
-                freeCommandBuffers();
-                createCommandBuffers();
-            }
 
-        // TODO
+            if (oldSwapChain->compareSwapFormats(*lveSwapChain.get())) {// .get returns a pointer to the original object managed
+                throw std::runtime_error("Swap chain image(or depth) format has changed");
+            }
+        }
     }
 
     /*
@@ -51,8 +51,9 @@ namespace lve {
 
     void LveRenderer::createCommandBuffers() {
         // Depends on whether computer supports double or triple buffering
-        // Will match the number of framebuffer
-        commandBuffers.resize(lveSwapChain->imageCount());
+        // We will no longer match the number of command buffers and frame buffers
+        // We will have frames feed into whichever frame buffer is available
+        commandBuffers.resize(LveSwapChain::MAX_FRAMES_IN_FLIGHT); // THe number of frames we have at the same time
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -144,6 +145,7 @@ namespace lve {
         }
 
         isFrameStarted = false;
+        currentFrameIndex = (currentFrameIndex + 1) % LveSwapChain::MAX_FRAMES_IN_FLIGHT;
     }
 
     void LveRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
