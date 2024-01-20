@@ -1,11 +1,9 @@
 #pragma once
 
 #include "lve_window.hpp"
-#include "lve_pipeline.hpp"
 #include "lve_device.hpp"
-#include "lve_swap_chain.hpp"
-#include "lve_model.hpp"
 #include "lve_game_object.hpp"
+#include "lve_renderer.hpp"
 
 //std
 #include <memory>
@@ -28,26 +26,11 @@ namespace lve {
         private:
             void loadGameObjects();
             std::vector<LveModel::Vertex> draw_triangles(std::vector<LveModel::Vertex> input, unsigned int depth);
-            void createPipelineLayout();
-            void createPipeline();
-            void createCommandBuffers();
-            void freeCommandBuffers();
-            void drawFrame();
-            void recreateSwapChain();
-            void recordCommandBuffer(int imageIndex);
-            void renderGameObjects(VkCommandBuffer commandBuffer);
 
             // Learning constructed here, that means that object will construct and deconstruct with the app
             LveWindow lveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
             LveDevice lveDevice{lveWindow};
-            // By using unique ptr, can easily create a new swapchain and swapping it out
-            std::unique_ptr<LveSwapChain> lveSwapChain;
-            // Smart pointer:
-            //  A pointer with the additional functionality of automatic memory management
-            //  No longer responsible for new and delete
-            std::unique_ptr<LvePipeline> lvePipeline;
-            VkPipelineLayout pipelineLayout;
-            std::vector<VkCommandBuffer> commandBuffers;
+            LveRenderer lveRenderer{lveWindow, lveDevice};
             std::vector<LveModel::Vertex> vertices;
             std::vector<LveGameObject> gameObjects;
     };

@@ -1,6 +1,6 @@
 include .env
 
-CFLAGS = -std=c++17 -I.
+CFLAGS = -std=c++17 -I. -I$(VULKAN_SDK_PATH)/include
 LDFLAGS = `pkg-config --static --libs glfw3` -lvulkan
 
 GLSLC = glslc
@@ -27,4 +27,4 @@ test: a.out
 
 clean:
 	rm -f a.out
-	rm -f *.spv
+	rm -f shaders/*.spv
