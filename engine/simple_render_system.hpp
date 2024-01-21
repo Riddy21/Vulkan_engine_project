@@ -21,7 +21,6 @@ namespace lve {
             void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<LveGameObject> &gameObjects);
 
         private:
-            std::vector<LveModel::Vertex> draw_triangles(std::vector<LveModel::Vertex> input, unsigned int depth);
             void createPipelineLayout();
             void createPipeline(VkRenderPass renderPass); // Not storing render pass, because render system lifecycle is not tied
 

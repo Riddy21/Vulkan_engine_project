@@ -30,7 +30,7 @@ namespace lve {
             std::shared_ptr<LveSwapChain> oldSwapChain = std::move(lveSwapChain);
             lveSwapChain = std::make_unique<LveSwapChain>(lveDevice, extent, std::move(lveSwapChain)); // Allow us to create a new copy of lveSwapChain, but set LveSwapChain as null pointer
 
-            if (oldSwapChain->compareSwapFormats(*lveSwapChain.get())) {// .get returns a pointer to the original object managed
+            if (!oldSwapChain->compareSwapFormats(*lveSwapChain.get())) {// .get returns a pointer to the original object managed
                 throw std::runtime_error("Swap chain image(or depth) format has changed");
             }
         }

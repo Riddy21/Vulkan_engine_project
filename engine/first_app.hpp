@@ -14,7 +14,7 @@ namespace lve {
         public:
             // Learning: constexpr is evaluated at compile time when possible
             static constexpr int WIDTH = 800;
-            static constexpr int HEIGHT = 600;
+            static constexpr int HEIGHT = 800;
 
             FirstApp();
             ~FirstApp();

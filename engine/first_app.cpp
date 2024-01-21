@@ -1,6 +1,7 @@
 #include "first_app.hpp"
 
 #include "simple_render_system.hpp"
+#include "pong.hpp"
 
 #define GLM_FORCE_RADIANS // Radians must be radians
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE // Expect depth values to 0 - 1
@@ -41,42 +42,10 @@ namespace lve {
         vkDeviceWaitIdle(lveDevice.device());
     }
 
-    std::vector<LveModel::Vertex> FirstApp::draw_triangles(std::vector<LveModel::Vertex> input, unsigned int depth){
-        if (depth == 0){
-            return input;
-        } else {
-            std::vector<LveModel::Vertex> output;
-            std::vector<LveModel::Vertex> buffer;
-            for (int i=0; i<input.size(); i++){
-                buffer.push_back(input[i]);
-                buffer.push_back({(input[i].position + input[(i+1)%input.size()].position) * 0.5f, input[(i+1)%input.size()].color});
-                buffer.push_back({(input[i].position + input[(i+2)%input.size()].position) * 0.5f, input[(i+2)%input.size()].color});
-                buffer = draw_triangles(buffer, depth - 1);
-                output.insert(output.end(), buffer.begin(), buffer.end());
-                buffer.clear();
-            }
-            return output;
-        }
-    }
-
     void FirstApp::loadGameObjects(){
-        vertices = { // First bracket is the vector
-            {{0.0f, -0.3f}, {1.0f, 0.0f, 0.0f}}, // Each vertex, GLM vect2 position member
-            {{0.3f, 0.3f}, {0.0f, 1.0f, 0.0f}},
-            {{-0.3f, 0.3f}, {0.0f, 0.0f, 1.0f}}
-        };
-        auto new_vertices = draw_triangles(vertices, 1);
+        glm::vec3 white = {1.0f, 1.0f, 1.0f};
+        auto wall = pong::Wall{lveDevice, {{{0.0f,0.5f}, {0.0f, 1.0f}}}, white};
 
-        // Intialize the model
-        auto lveModel = std::make_shared<LveModel>(lveDevice, new_vertices); // using shared object to assign one model to multiple game objects
-
-        auto triangle = LveGameObject::createGameObject();
-        triangle.model = lveModel;
-        triangle.color = {.1f, .8f, .1f};
-        triangle.transform2d.translation.x = .2f;
-        triangle.transform2d.scale = {2.f, .5f};
-        triangle.transform2d.rotation = .25f * glm::two_pi<float>(); // Vulkan coord y goes from - to +, so rotation is opposite
-
-        gameObjects.push_back(std::move(triangle)); // moves the ownership of the object
+        gameObjects.push_back(wall.getGameObject()); // moves the ownership of the object
     }
 }

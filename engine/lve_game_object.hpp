@@ -7,18 +7,9 @@
 
 namespace lve {
     struct Transform2dComponent { // structs can have functions in c++
-        glm::vec2 translation{}; // (position offest)
+        glm::vec2 translation{.0f, .0f}; // (position offest)
         glm::vec2 scale{1.f, 1.f}; // (scale coefficient)
-        float rotation; // 
-
-        glm::mat2 mat2() {
-            const float s = glm::sin(rotation);
-            const float c = glm::cos(rotation);
-            glm::mat2 rotMatrix{{c, s}, {-s, c}};
-            glm::mat2 scaleMat{{scale.x, .0f}, {.0f, scale.y}}; // function to scale the matrix
-            // return scaleMat * rotMatrix; // rotate, then scale
-            return rotMatrix * scaleMat; // scale, then rotate (read from right to left)
-        }
+        float rotation{.0f}; // 
     };
 
     class LveGameObject {

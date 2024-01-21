@@ -9,11 +9,12 @@
 
 namespace lve {
 
-    // In implementation because it's temporary
     struct SimplePushConstantData {
-        glm::mat2 transform{1.f}; // Default initialized to identity matrix, basically no change
-        glm::vec2 offset;
-        alignas(16) glm::vec3 color; // Alignment issue with glfw struct, needs to align by 4 bytes
+        glm::float32 rotate{0.0f}; // 4 bytes
+        char pad[4]; // 4 bytes
+        glm::vec2 scale{1.f, 1.f}; // 8 bytes
+        glm::vec2 offset{.0f, 0.f}; // 8 bytes
+        alignas(16) glm::vec3 color; // 12 bytes
     };
 
     SimpleRenderSystem::SimpleRenderSystem(LveDevice &device, VkRenderPass renderPass) : lveDevice{device} {
@@ -72,11 +73,11 @@ namespace lve {
         lvePipeline->bind(commandBuffer);
 
         for (auto& obj: gameObjects){
-            obj.transform2d.rotation = glm::mod(obj.transform2d.rotation + 0.01f, glm::two_pi<float>());
             SimplePushConstantData push{};
             push.offset = obj.transform2d.translation;
             push.color = obj.color;
-            push.transform = obj.transform2d.mat2();
+            push.rotate = obj.transform2d.rotation;
+            push.scale = obj.transform2d.scale;
 
             vkCmdPushConstants(commandBuffer,
                                pipelineLayout,
