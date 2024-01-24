@@ -31,8 +31,10 @@ namespace lve {
                 // render shadow casting objects
                 //end offscreen shadow pass
 
+                environment.update(0.1f);
+
                 lveRenderer.beginSwapChainRenderPass(commandBuffer); // Record the command buffer, set up the render system
-                simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects);
+                simpleRenderSystem.renderGameObjects(commandBuffer, environment.getGameObjects());
                 lveRenderer.endSwapChainRenderPass(commandBuffer); // Stop recording the command buffer
                 lveRenderer.endFrame(); // Submits the command buffer
             }
@@ -44,8 +46,10 @@ namespace lve {
 
     void FirstApp::loadGameObjects(){
         glm::vec3 white = {1.0f, 1.0f, 1.0f};
-        auto wall = pong::Wall{lveDevice, {{{0.0f,0.5f}, {0.0f, 1.0f}}}, white};
-
-        gameObjects.push_back(wall.getGameObject()); // moves the ownership of the object
+        glm::vec3 red = {1.0f, .0f, .0f};
+        pong::Ball ball = pong::Ball{environment, {-0.4f,0.5f}, 0.02f, red};
+        pong::Wall wall = pong::Wall{environment, {{{-0.9f, -0.9f}, {0.9f, -0.7f}}}, white};
+        environment.addBall(std::make_shared<pong::Ball>(ball));
+        environment.addWall(std::make_shared<pong::Wall>(wall));
     }
 }

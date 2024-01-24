@@ -4,6 +4,7 @@
 #include "lve_device.hpp"
 #include "lve_game_object.hpp"
 #include "lve_renderer.hpp"
+#include "pong.hpp"
 
 //std
 #include <memory>
@@ -31,7 +32,7 @@ namespace lve {
             LveWindow lveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
             LveDevice lveDevice{lveWindow};
             LveRenderer lveRenderer{lveWindow, lveDevice};
+            pong::Environment environment{lveDevice, {0.f, -0.1f}};
             std::vector<LveModel::Vertex> vertices;
-            std::vector<LveGameObject> gameObjects;
     };
 }

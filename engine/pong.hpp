@@ -11,16 +11,52 @@
 #include <glm/gtc/constants.hpp>
 
 namespace pong {
-    class Wall {
+    class Environment;
+    class Wall : public lve::LveGameObject{
         public:
-        Wall(lve::LveDevice &device, std::array<glm::vec2, 2> location, glm::vec3 color);
-
-        lve::LveGameObject getGameObject() { return std::move(wallGameObject); }
+        Wall(const Environment& environment, std::array<glm::vec2, 2> location, glm::vec3 color);
 
         private:
         std::unique_ptr<lve::LveModel> createWallModel();
 
-        lve::LveDevice& device;
-        lve::LveGameObject wallGameObject;
+        const Environment& environment;
+        float thickness = 0.02f;
     };
+
+    class Ball : public lve::LveGameObject{
+        public:
+        Ball(const Environment& environment, glm::vec2 location, float size, glm::vec3 colour);
+
+        void update(float delta_time);
+        void changeVelocity(glm::vec2 new_velocity) {velocity = new_velocity;}
+
+        private:
+        std::unique_ptr<lve::LveModel> createBallModel();
+
+        const Environment& environment;
+        glm::vec2 position;
+        float radius;
+        glm::vec2 velocity{0.3f, -2.f};
+    };
+
+    class Environment{
+        public:
+        Environment(lve::LveDevice &device, const glm::vec2 gravity) : device{device}, gravity{gravity} {};
+        
+        void addBall(std::shared_ptr<pong::Ball> ball) {ballObjects.push_back(ball);}
+        void addWall(std::shared_ptr<pong::Wall> wall) {wallObjects.push_back(wall);}
+        void update(float delta_time) {};
+        std::vector<std::shared_ptr<lve::LveGameObject>> getGameObjects() const {return std::vector<std::shared_ptr<lve::LveGameObject>>(ballObjects.begin(), ballObjects.end());}
+
+        lve::LveDevice& device;
+        const glm::vec2 gravity;
+
+        private:
+        static void detectCollisions(const Ball& ball, const Wall& wall);
+        static glm::vec2 bounce(const glm::vec2 velocity, const float angle);
+
+        std::vector<std::shared_ptr<pong::Ball>> ballObjects;
+        std::vector<std::shared_ptr<pong::Wall>> wallObjects;
+    };
+
 }

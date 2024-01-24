@@ -21,7 +21,7 @@ namespace lve {
             return LveGameObject{currentId++}; // incrementing ID every time it is created
         };
 
-        LveGameObject(const LveGameObject &) = delete;
+        LveGameObject(const LveGameObject &) = default;
         LveGameObject &operator=(const LveGameObject &) = delete;
         LveGameObject(LveGameObject &&) = default; // For move to work correclty // using rvalue reference
         LveGameObject &operator=(LveGameObject &&) = default; // rvalue reference can be bound to a temporary

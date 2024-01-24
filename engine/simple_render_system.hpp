@@ -18,7 +18,7 @@ namespace lve {
             SimpleRenderSystem(const SimpleRenderSystem &) = delete;
             SimpleRenderSystem &operator=(const SimpleRenderSystem &) = delete;
 
-            void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<LveGameObject> &gameObjects);
+            void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<std::shared_ptr<LveGameObject>> gameObjects);
 
         private:
             void createPipelineLayout();

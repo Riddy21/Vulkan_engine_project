@@ -11,14 +11,23 @@ vertObjFiles = $(patsubst %.vert, %.vert.spv, $(vertSources))
 fragSources = $(shell find ./shaders -type f -name "*.frag")
 fragObjFiles = $(patsubst %.frag, %.frag.spv, $(fragSources))
 
-TARGET = a.out
-$(TARGET): $(vertObjFiles) $(fragObjFiles)
-$(TARGET): *.cpp *.hpp
-	g++  $(CFLAGS) -o $(TARGET) *.cpp $(LDFLAGS)
+# create list of all cpp files and set as dependency
+cppSources = $(wildcard *.cpp)
+cppHeaders = $(wildcard *.hpp)
+cppObjFiles = $(patsubst %.cpp, build/%.o, $(cppSources))
+
+TARGET = pong
+$(TARGET): $(vertObjFiles) $(fragObjFiles) $(cppObjFiles) $(cppHeaders)
+	g++ $(cppObjFiles) -o $(TARGET) $(LDFLAGS)
 
 # make shader targets
 %.spv: %
 	${GLSLC} $< -o $@
+
+# make object file targets
+build/%.o: %.cpp
+	@mkdir -p build
+	g++ $(CFLAGS) -c $< -o $@
 
 .PHONY: test clean
 
@@ -28,3 +37,4 @@ test: a.out
 clean:
 	rm -f a.out
 	rm -f shaders/*.spv
+	rm -f build/*.o

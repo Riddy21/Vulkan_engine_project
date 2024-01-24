@@ -69,15 +69,15 @@ namespace lve {
         
     }
 
-    void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::vector<LveGameObject> &gameObjects) {
+    void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::vector<std::shared_ptr<LveGameObject>> gameObjects) {
         lvePipeline->bind(commandBuffer);
 
         for (auto& obj: gameObjects){
             SimplePushConstantData push{};
-            push.offset = obj.transform2d.translation;
-            push.color = obj.color;
-            push.rotate = obj.transform2d.rotation;
-            push.scale = obj.transform2d.scale;
+            push.offset = obj->transform2d.translation;
+            push.color = obj->color;
+            push.rotate = obj->transform2d.rotation;
+            push.scale = obj->transform2d.scale;
 
             vkCmdPushConstants(commandBuffer,
                                pipelineLayout,
@@ -86,8 +86,8 @@ namespace lve {
                                sizeof(SimplePushConstantData),
                                &push);
 
-            obj.model->bind(commandBuffer);
-            obj.model->draw(commandBuffer); 
+            obj->model->bind(commandBuffer);
+            obj->model->draw(commandBuffer); 
 
         }
     }
