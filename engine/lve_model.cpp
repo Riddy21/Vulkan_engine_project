@@ -5,7 +5,7 @@
 #include <cstring>
 
 namespace lve {
-    LveModel::LveModel(LveDevice &device, const std::vector<Vertex> &vertices) : lveDevice{device} {
+    LveModel::LveModel(LveDevice &device, const std::vector<Vertex> &vertices) : lveDevice{device} , vertices{vertices} {
         createVertexBuffers(vertices);
     }
 

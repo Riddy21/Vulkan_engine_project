@@ -32,7 +32,7 @@ namespace lve {
             LveWindow lveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
             LveDevice lveDevice{lveWindow};
             LveRenderer lveRenderer{lveWindow, lveDevice};
-            pong::Environment environment{lveDevice, {0.f, -0.1f}};
+            pong::Environment environment{lveDevice, {0.f, -12.8f}};
             std::vector<LveModel::Vertex> vertices;
     };
 }

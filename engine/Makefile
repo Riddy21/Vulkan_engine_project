@@ -17,7 +17,7 @@ cppHeaders = $(wildcard *.hpp)
 cppObjFiles = $(patsubst %.cpp, build/%.o, $(cppSources))
 
 TARGET = pong
-$(TARGET): $(vertObjFiles) $(fragObjFiles) $(cppObjFiles) $(cppHeaders)
+$(TARGET): $(vertObjFiles) $(fragObjFiles) $(cppObjFiles)
 	g++ $(cppObjFiles) -o $(TARGET) $(LDFLAGS)
 
 # make shader targets
@@ -25,7 +25,7 @@ $(TARGET): $(vertObjFiles) $(fragObjFiles) $(cppObjFiles) $(cppHeaders)
 	${GLSLC} $< -o $@
 
 # make object file targets
-build/%.o: %.cpp
+build/%.o: %.cpp $(cppHeaders)
 	@mkdir -p build
 	g++ $(CFLAGS) -c $< -o $@
 

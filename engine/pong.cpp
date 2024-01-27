@@ -49,7 +49,16 @@ namespace pong {
     void Ball::update(float delta_time) {
         velocity += environment.gravity * delta_time;
         // Update the position of the ball
-        transform2d.translation += velocity * delta_time;
+        // flip the velocity in the y direction because of vulkan coordinate system
+        transform2d.translation += (glm::vec2(velocity.x, -velocity.y) * delta_time) * environment.scale;
+    }
+
+    void Ball::bounce(float parallel) {
+        // get the normal from the parallel
+        float normal = parallel + glm::pi<float>() / 2.f;
+        // rotate the velocity by the normal
+        glm::mat2 rotation = glm::mat2(glm::cos(normal), glm::sin(normal), -glm::sin(normal), glm::cos(normal));
+        velocity = rotation * velocity * 0.9f; // Apply a 10% energy loss
     }
 
     std::unique_ptr<lve::LveModel> Ball::createBallModel() {
@@ -65,5 +74,63 @@ namespace pong {
             model_vertices.push_back({{point2.x, point2.y}});
         }
         return std::make_unique<lve::LveModel>(environment.device, model_vertices);
+    }
+
+    void Environment::update(float delta_time) {
+        for (auto ball : ballObjects) {
+            for (auto wall : wallObjects) {
+                if (detectCollisions(*ball, *wall)) {
+                    ball->bounce(wall->transform2d.rotation);
+                    continue;
+                }
+            }
+            ball->update(delta_time);
+        }
+    }
+
+    bool Environment::detectCollisions(const Ball &ball, const Wall &wall) {
+        // Get the vertices of the wall
+        std::vector<lve::LveModel::Vertex> wall_vertices = wall.model->getVertices();
+        // Get the vertices of the ball
+        std::vector<lve::LveModel::Vertex> ball_vertices = ball.model->getVertices();
+        // transform and rotate on wall vertices to get them in the right spot, and add them to a vector
+        for (auto &vertex : wall_vertices) {
+            glm::mat2 rotation = glm::mat2(glm::cos(wall.transform2d.rotation), glm::sin(wall.transform2d.rotation),
+                                           -glm::sin(wall.transform2d.rotation), glm::cos(wall.transform2d.rotation));
+            glm::mat2 scale = glm::mat2(wall.transform2d.scale.x, 0.f, 0.f, wall.transform2d.scale.y);
+            vertex.position = wall.transform2d.translation + (rotation * scale * vertex.position);
+        }
+        // transform on ball vertices to get them in the right spot, and add them to a vector
+        for (auto &vertex : ball_vertices) {
+            vertex.position = ball.transform2d.translation + (vertex.position * ball.transform2d.scale);
+        }
+        // Check if any of the ball vertices are inside the wall
+        for (auto &ball_vertex : ball_vertices) {
+            for (int i = 0; i < wall_vertices.size(); i += 3) {
+                // Get the vertices of the triangle
+                glm::vec3 vertex1 = glm::vec3(wall_vertices[i].position, 0.0f);
+                glm::vec3 vertex2 = glm::vec3(wall_vertices[i + 1].position, 0.0f);
+                glm::vec3 vertex3 = glm::vec3(wall_vertices[i + 2].position, 0.0f);
+                // Check if the ball vertex is inside the triangle
+                if (glm::abs(glm::cross(vertex2 - vertex1, vertex3 - vertex1)) ==
+                    glm::abs(glm::cross(vertex2 - vertex1, glm::vec3(ball_vertex.position, 0.0f) - vertex1)) +
+                    glm::abs(glm::cross(vertex3 - vertex2, glm::vec3(ball_vertex.position, 0.0f) - vertex2)) +
+                    glm::abs(glm::cross(vertex1 - vertex3, glm::vec3(ball_vertex.position, 0.0f) - vertex3))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    std::vector<std::shared_ptr<lve::LveGameObject>> Environment::getGameObjects() const {
+        std::vector<std::shared_ptr<lve::LveGameObject>> gameObjects;
+        for (auto ball : ballObjects) {
+            gameObjects.push_back(ball);
+        }
+        for (auto wall : wallObjects) {
+            gameObjects.push_back(wall);
+        }
+        return gameObjects;
     }
 }

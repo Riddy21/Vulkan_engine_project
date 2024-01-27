@@ -31,7 +31,7 @@ namespace lve {
                 // render shadow casting objects
                 //end offscreen shadow pass
 
-                environment.update(0.1f);
+                environment.update(0.003f);// 60fps
 
                 lveRenderer.beginSwapChainRenderPass(commandBuffer); // Record the command buffer, set up the render system
                 simpleRenderSystem.renderGameObjects(commandBuffer, environment.getGameObjects());
@@ -47,9 +47,20 @@ namespace lve {
     void FirstApp::loadGameObjects(){
         glm::vec3 white = {1.0f, 1.0f, 1.0f};
         glm::vec3 red = {1.0f, .0f, .0f};
-        pong::Ball ball = pong::Ball{environment, {-0.4f,0.5f}, 0.02f, red};
-        pong::Wall wall = pong::Wall{environment, {{{-0.9f, -0.9f}, {0.9f, -0.7f}}}, white};
+        pong::Ball ball = pong::Ball{environment, {-0.6f,-2.0f}, 0.02f, red};
+        pong::Ball ball2 = pong::Ball{environment, {-0.6f,-2.1f}, 0.02f, red};
         environment.addBall(std::make_shared<pong::Ball>(ball));
-        environment.addWall(std::make_shared<pong::Wall>(wall));
+        environment.addBall(std::make_shared<pong::Ball>(ball2));
+
+        // generate a bunch of walls in waterfall order
+        pong::Wall wall1 = pong::Wall{environment, {{{-0.8f, -0.6f}, {-0.2f, -0.4f}}}, white};
+        pong::Wall wall2 = pong::Wall{environment, {{{0.8f, -0.3f}, {0.2f, -0.1f}}}, white};
+        pong::Wall wall3 = pong::Wall{environment, {{{-0.8f, 0.f}, {-0.2f, 0.2f}}}, white};
+        pong::Wall wall4 = pong::Wall{environment, {{{0.8f, 0.3f}, {0.2f, 0.4f}}}, white};
+        environment.addWall(std::make_shared<pong::Wall>(wall1));
+        environment.addWall(std::make_shared<pong::Wall>(wall2));
+        environment.addWall(std::make_shared<pong::Wall>(wall3));
+        environment.addWall(std::make_shared<pong::Wall>(wall4));
+
     }
 }

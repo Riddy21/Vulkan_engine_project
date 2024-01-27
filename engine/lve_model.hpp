@@ -32,6 +32,7 @@ namespace lve {
 
             void bind(VkCommandBuffer commandBuffer);
             void draw(VkCommandBuffer commandBuffer);
+            std::vector<Vertex> getVertices() {return vertices;}
 
         private:
             void createVertexBuffers(const std::vector<Vertex> &verticies);
@@ -42,5 +43,6 @@ namespace lve {
             VkBuffer vertexBuffer;
             VkDeviceMemory vertexBufferMemory;
             uint32_t vertexCount;
+            std::vector<Vertex> vertices;
     };
 }
