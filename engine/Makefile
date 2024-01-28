@@ -16,7 +16,7 @@ cppSources = $(wildcard *.cpp)
 cppHeaders = $(wildcard *.hpp)
 cppObjFiles = $(patsubst %.cpp, build/%.o, $(cppSources))
 
-TARGET = pong
+TARGET = pong.out
 $(TARGET): $(vertObjFiles) $(fragObjFiles) $(cppObjFiles)
 	g++ $(cppObjFiles) -o $(TARGET) $(LDFLAGS)
 
