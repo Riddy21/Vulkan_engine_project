@@ -70,7 +70,7 @@ namespace lve {
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2); // Needs to match the number of output vertex attribues
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT; // The format of our data
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT; // The format of our data
         attributeDescriptions[0].offset = offsetof(Vertex, position);
 
         attributeDescriptions[1].binding = 0; // inteleaving position and color in 1 binding

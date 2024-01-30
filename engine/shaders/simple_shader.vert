@@ -5,7 +5,7 @@
 //     - Datatype is vec2
 //     - The in key word specifies that this takes the value from the vertex buffer
 //     - location specifies the storage location of where the variable value will come from
-layout(location = 0) in vec2 position;
+layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 color; // loation is the state machine location of the input
 
 // No association in input locations and output locations
@@ -14,8 +14,7 @@ layout(location = 0) out vec3 fragColor;
 // Shader expects to receive push constant data
 // NOTE: Only one push constant can be used per shader block
 layout(push_constant) uniform Push {
-    mat2 transform;
-    vec2 offset; // must be same order as co
+    mat4 transform;
     vec3 color;
 } push;
 
@@ -30,7 +29,6 @@ void main() {
     //      z: 0 is front most layer stacks of layers 1 is the back
     //      normalization coef: normalizes vector, all the vectors are divided by this component to normalize
     // Mat2 is not commutative
-    gl_Position = vec4(push.transform * position + push.offset, 0.0, 1.0); // don't need to specify the index because specified in vertex buffer 
-                                                                           // position is multiplied on the right side (applied first)
+    gl_Position = push.transform * vec4(position, 1.0); // vec4 is homogeneous coordinate
     fragColor = color;
 }

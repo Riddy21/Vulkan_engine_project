@@ -41,42 +41,71 @@ namespace lve {
         vkDeviceWaitIdle(lveDevice.device());
     }
 
-    std::vector<LveModel::Vertex> FirstApp::draw_triangles(std::vector<LveModel::Vertex> input, unsigned int depth){
-        if (depth == 0){
-            return input;
-        } else {
-            std::vector<LveModel::Vertex> output;
-            std::vector<LveModel::Vertex> buffer;
-            for (int i=0; i<input.size(); i++){
-                buffer.push_back(input[i]);
-                buffer.push_back({(input[i].position + input[(i+1)%input.size()].position) * 0.5f, input[(i+1)%input.size()].color});
-                buffer.push_back({(input[i].position + input[(i+2)%input.size()].position) * 0.5f, input[(i+2)%input.size()].color});
-                buffer = draw_triangles(buffer, depth - 1);
-                output.insert(output.end(), buffer.begin(), buffer.end());
-                buffer.clear();
-            }
-            return output;
+    std::unique_ptr<LveModel> FirstApp::createCubeModel(LveDevice& device, glm::vec3 offset) {
+        std::vector<LveModel::Vertex> vertices{
+        
+            // left face (white)
+            {{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
+            {{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
+            {{-.5f, -.5f, .5f}, {.9f, .9f, .9f}},
+            {{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
+            {{-.5f, .5f, -.5f}, {.9f, .9f, .9f}},
+            {{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
+
+            // right face (yellow)
+            {{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
+            {{.5f, .5f, .5f}, {.8f, .8f, .1f}},
+            {{.5f, -.5f, .5f}, {.8f, .8f, .1f}},
+            {{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
+            {{.5f, .5f, -.5f}, {.8f, .8f, .1f}},
+            {{.5f, .5f, .5f}, {.8f, .8f, .1f}},
+
+            // top face (orange, remember y axis points down)
+            {{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+            {{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+            {{-.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+            {{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+            {{.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+            {{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+
+            // bottom face (red)
+            {{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+            {{.5f, .5f, .5f}, {.8f, .1f, .1f}},
+            {{-.5f, .5f, .5f}, {.8f, .1f, .1f}},
+            {{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+            {{.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+            {{.5f, .5f, .5f}, {.8f, .1f, .1f}},
+
+            // nose face (blue)
+            {{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+            {{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+            {{-.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+            {{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+            {{.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
+            {{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
+
+            // tail face (green)
+            {{-.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+            {{.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+            {{-.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+            {{-.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+            {{.5f, -.5f, -0.5f}, {.1f, .8f, .1f}},
+            {{.5f, .5f, -0.5f}, {.1f, .8f, .1f}},
+
+        };
+        for (auto& v : vertices) {
+            v.position += offset;
         }
+        return std::make_unique<LveModel>(device, vertices);
     }
 
     void FirstApp::loadGameObjects(){
-        vertices = { // First bracket is the vector
-            {{0.0f, -0.3f}, {1.0f, 0.0f, 0.0f}}, // Each vertex, GLM vect2 position member
-            {{0.3f, 0.3f}, {0.0f, 1.0f, 0.0f}},
-            {{-0.3f, 0.3f}, {0.0f, 0.0f, 1.0f}}
-        };
-        auto new_vertices = draw_triangles(vertices, 1);
+        std::shared_ptr<LveModel> lveModel = createCubeModel(lveDevice, {0.f, 0.f, 0.f});
 
-        // Intialize the model
-        auto lveModel = std::make_shared<LveModel>(lveDevice, new_vertices); // using shared object to assign one model to multiple game objects
-
-        auto triangle = LveGameObject::createGameObject();
-        triangle.model = lveModel;
-        triangle.color = {.1f, .8f, .1f};
-        triangle.transform2d.translation.x = .2f;
-        triangle.transform2d.scale = {2.f, .5f};
-        triangle.transform2d.rotation = .25f * glm::two_pi<float>(); // Vulkan coord y goes from - to +, so rotation is opposite
-
-        gameObjects.push_back(std::move(triangle)); // moves the ownership of the object
+        auto cube = LveGameObject::createGameObject();
+        cube.model = lveModel;
+        cube.transform.translation = {.0f, .0f, .5f}; // z goes from 0 to 1
+        cube.transform.scale = {.5f, .5f, .5f};
+        gameObjects.push_back(std::move(cube)); // moves the ownership of the object
     }
 }

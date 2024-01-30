@@ -2,22 +2,33 @@
 
 #include "lve_model.hpp"
 
+// Libs
+#include <glm/gtc/matrix_transform.hpp>
+
 //std lib
 #include <memory>
 
 namespace lve {
-    struct Transform2dComponent { // structs can have functions in c++
-        glm::vec2 translation{}; // (position offest)
-        glm::vec2 scale{1.f, 1.f}; // (scale coefficient)
-        float rotation; // 
+    struct TransformComponent { // structs can have functions in c++
+        glm::vec3 translation{}; // (position offest)
+        glm::vec3 scale{1.f, 1.f, 1.f}; // (scale coefficient)
+        glm::vec3 rotation{}; // (rotation angle)
 
-        glm::mat2 mat2() {
-            const float s = glm::sin(rotation);
-            const float c = glm::cos(rotation);
-            glm::mat2 rotMatrix{{c, s}, {-s, c}};
-            glm::mat2 scaleMat{{scale.x, .0f}, {.0f, scale.y}}; // function to scale the matrix
-            // return scaleMat * rotMatrix; // rotate, then scale
-            return rotMatrix * scaleMat; // scale, then rotate (read from right to left)
+        // Matrix corresponds to translate * Ry * Rx * Rz * scale
+        // Rotation convention used is Y(1) X(2) Z(3)
+        glm::mat4 mat4() { // 3 spacial dimensions and 1 for homogenious coordinates
+            // 1 0 0 tx
+            // 0 1 0 ty
+            // 0 0 1 tz
+            // 0 0 0 1
+            auto transform = glm::translate(glm::mat4{1.f}, translation);
+
+            transform = glm::rotate(transform, rotation.y, {0.f, 1.f, 0.f}); // transform * rotation
+            transform = glm::rotate(transform, rotation.x, {1.f, 0.f, 0.f}); // transform * rotation
+            transform = glm::rotate(transform, rotation.z, {0.f, 0.f, 1.f}); // transform * rotation
+
+            transform = glm::scale(transform, scale); // transform * scale
+            return transform;
         }
     };
 
@@ -38,8 +49,8 @@ namespace lve {
         const id_t getId() { return id; }
 
         std::shared_ptr<LveModel> model{};
-        glm::vec3 color{};
-        Transform2dComponent transform2d;
+        glm::vec3 color{1.f, 1.f, 1.f};
+        TransformComponent transform{};
 
         private:
         LveGameObject(id_t objId) : id{objId} {}

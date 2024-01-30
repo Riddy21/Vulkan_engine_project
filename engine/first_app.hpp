@@ -25,7 +25,7 @@ namespace lve {
             void run();
         private:
             void loadGameObjects();
-            std::vector<LveModel::Vertex> draw_triangles(std::vector<LveModel::Vertex> input, unsigned int depth);
+            std::unique_ptr<LveModel> createCubeModel(LveDevice& device, glm::vec3 offset);
 
             // Learning constructed here, that means that object will construct and deconstruct with the app
             LveWindow lveWindow{WIDTH, HEIGHT, "Hello Vulkan!"};
